@@ -436,18 +436,21 @@ class App:
                     self.root.after(0, self.prompt_for_update)
                 else:
                     self.logger.log("✅ All Docker images are already up to date.")
+                    self.root.after(0, lambda: messagebox.showinfo("Up to Date", "Your Docker images are already up to date."))
             except Exception as e:
                 self.logger.log(f"❌ Error during image update check: {e}")
 
         threading.Thread(target=_thread_task, daemon=True).start()
 
     def prompt_for_update(self):
-        if messagebox.askyesno("Update Available", "A new Docker image version was found. Do you want to update and restart your nodes now?"):
-            self.logger.log("🚀 User confirmed update. Recreating containers with the new version...")
+        if messagebox.askyesno("Update Available", "A new Docker image version was found on GHCR Registry.\n\nDo you want to download it and update your nodes now?"):
+            self.logger.log("🚀 User confirmed update. Downloading new image and restarting containers...")
             
             def _apply_task():
-                self.root.after(0, self.deploy)
-                self.logger.log("✅ Nodes update process triggered successfully.")
+                path = self.folder_path.get()
+                success = self.ctrl.apply_update(path)
+                if success:
+                    self.root.after(0, self.update_node_checkboxes)
             
             threading.Thread(target=_apply_task, daemon=True).start()
         else:
